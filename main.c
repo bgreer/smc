@@ -9,6 +9,8 @@ int main (int argc, char* argv[])
 	int silent;
 	double dt_base;
 
+	N = 300;
+
 	/* Set default run params, overwrite with command line args */
 	R = 10000.0;
 	p = 1.0;
@@ -23,9 +25,12 @@ int main (int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	dt_base = 0.1*p;
+	init(initfile);
+
+	dt_base = 0.003*p;
 	maxsd = 1;
-	N = 100;
+	for (i=0; i<N+1; i++)
+		if (sd[i] > maxsd) maxsd = sd[i];
 	dx = 1.0/N;
 	dt = dt_base*dx*dx/(maxsd*maxsd); /* Attempt to keep things stable */
 
@@ -50,21 +55,6 @@ int main (int argc, char* argv[])
 	}
 
 	/* Allocate and initialize arrays */
-	sd = malloc((N+1)*sizeof(int));
-	flag = malloc((N+1)*sizeof(int));
-
-	W = malloc((N+1)*sizeof(double));
-	Z = malloc((N+1)*sizeof(double));
-	Tf = malloc((N+1)*sizeof(double));
-	Tm = malloc((N+1)*sizeof(double));
-
-	W_old = malloc((N+1)*sizeof(double));
-	Z_old = malloc((N+1)*sizeof(double));
-	Tf_old = malloc((N+1)*sizeof(double));
-	Tm_old = malloc((N+1)*sizeof(double));
-
-
-	init(initfile);
 	boundary_cond();
 	poisson_solve();
 
@@ -113,6 +103,22 @@ int main (int argc, char* argv[])
 	free(Tf);
 	free(Tm);
 	return EXIT_SUCCESS;
+}
+
+void allocate_arrays ()
+{
+	sd = malloc((N+1)*sizeof(int));
+	flag = malloc((N+1)*sizeof(int));
+
+	W = malloc((N+1)*sizeof(double));
+	Z = malloc((N+1)*sizeof(double));
+	Tf = malloc((N+1)*sizeof(double));
+	Tm = malloc((N+1)*sizeof(double));
+
+	W_old = malloc((N+1)*sizeof(double));
+	Z_old = malloc((N+1)*sizeof(double));
+	Tf_old = malloc((N+1)*sizeof(double));
+	Tm_old = malloc((N+1)*sizeof(double));
 }
 
 /*
@@ -170,12 +176,13 @@ void init (char* fname)
 
 	if (fname==NULL)
 	{
+		allocate_arrays();
 		/* Set default initial conditions */
 		for (i=0; i<N+1; i++)
 		{
 			Tf[i] = 0.0;
 			Tm[i] = 1.0-(i*1.0)/(N+1.0);
-			Z[i] = -0.2*sin(3.14*i/N);
+			Z[i] = -0.01*sin(3.14*i/N);
 			W[i] = 0.0;
 		}
 	//	Z[5] = -50.0;
@@ -184,15 +191,12 @@ void init (char* fname)
 		fp = fopen(fname, "r");
 		i = 0;
 		fscanf(fp, "%d\n", &trash);
-		if (trash != N)
-		{
-			printf("ERROR: Init file has N=%d, but I need N=%d\n", trash, N);
-			init(NULL);
-			return;
-		}
+		N = trash;
+		allocate_arrays();
 		for (i=0; i<N+1; i++)
 		{
-			fscanf(fp, "%f\t%f\t%f\t%f\t%f\n", &ftrash, &(W[i]), &(Z[i]), &(Tf[i]), &(Tm[i]));
+			fscanf(fp, "%e\t%e\t%e\t%e\t%e\t%e\t%d\n", 
+				&ftrash, &(W[i]), &(Z[i]), &(Tf[i]), &(Tm[i]), &ftrash, &(sd[i]));
 		}
 		fclose(fp);
 		printf("Init successfully read from %s\n", fname);

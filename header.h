@@ -24,6 +24,7 @@ int maxiter;
 char* initfile;
 
 /* Prototypes */
+void allocate_arrays ();
 void boundary_cond ();
 void save_old ();
 void init (char* fname);

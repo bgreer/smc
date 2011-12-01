@@ -36,13 +36,13 @@ void subdivide ()
 	int i, end = 0;
 	int newcount, high;
 
-	if (N >= 400) return;
+	if (N >= 600) return;
 
 	/* Scan through to find regions that need refinement */
 	newcount = 0;
 	for (i=1; i<N; i++)
 	{
-		if (fabs(dx*dx*d2dx2(Tm,i)/(sd[i]*sd[i])) > 0.01 && sd[i] <= 2)
+		if (fabs(dx*dx*d2dx2(Tm,i)/(sd[i]*sd[i])) > 0.01 && sd[i] <= 8)
 		{
 			/* subdivide between i-1, i, i+1 */
 			/* printf("subdivide at %d, %f\n", i, fabs(dx*dx*d2dx2(Tm,i))/(sd[i]*sd[i]));*/
