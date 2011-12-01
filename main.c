@@ -9,13 +9,15 @@ int main (int argc, char* argv[])
 	int silent;
 	double dt_base;
 
-	N = 300;
-
 	/* Set default run params, overwrite with command line args */
 	R = 10000.0;
 	p = 1.0;
-	k = 0.0;
+	k = 1.0;
 	C = 0.0;
+
+	N = 100;
+	maxtime = 100.0;
+	maxiter = 1000000;
 
 	/* Parse command-line arguments */
 	if (!parse_arguments(argc, argv))
@@ -25,18 +27,12 @@ int main (int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	init(initfile);
-
-	dt_base = 0.003*p;
+	dt_base = 0.01*p;
 	maxsd = 1;
-	for (i=0; i<N+1; i++)
-		if (sd[i] > maxsd) maxsd = sd[i];
 	dx = 1.0/N;
 	dt = dt_base*dx*dx/(maxsd*maxsd); /* Attempt to keep things stable */
 
 	time = 0.0;
-	maxtime = 100.0;
-	maxiter = 1000000;
 	check_interval = 1000;
 	debug2 = 0;
 
@@ -55,6 +51,7 @@ int main (int argc, char* argv[])
 	}
 
 	/* Allocate and initialize arrays */
+	init(initfile);
 	boundary_cond();
 	poisson_solve();
 
@@ -165,14 +162,9 @@ void save_old ()
 void init (char* fname)
 {
 	int i, trash;
-	double ftrash;
+	double ftrash, ftrash2;
+	float data1, data2, data3, data4, data5;
 	FILE* fp;
-
-	for (i=0; i<N+1; i++)
-	{
-		sd[i] = 1;
-		flag[i] = 0;
-	}
 
 	if (fname==NULL)
 	{
@@ -184,8 +176,9 @@ void init (char* fname)
 			Tm[i] = 1.0-(i*1.0)/(N+1.0);
 			Z[i] = -0.01*sin(3.14*i/N);
 			W[i] = 0.0;
+			sd[i] = 1;
+			flag[i] = 0;
 		}
-	//	Z[5] = -50.0;
 	} else {
 		/* Load initial conditions from file */
 		fp = fopen(fname, "r");
@@ -196,7 +189,13 @@ void init (char* fname)
 		for (i=0; i<N+1; i++)
 		{
 			fscanf(fp, "%e\t%e\t%e\t%e\t%e\t%e\t%d\n", 
-				&ftrash, &(W[i]), &(Z[i]), &(Tf[i]), &(Tm[i]), &ftrash, &(sd[i]));
+				&ftrash, &data1, &data2, &data3, &data4, &ftrash2, &trash);
+			W[i] = data1;
+			Z[i] = data2;
+			Tf[i] = data3;
+			Tm[i] = data4;
+			sd[i] = trash;
+			flag[i] = 0;
 		}
 		fclose(fp);
 		printf("Init successfully read from %s\n", fname);
